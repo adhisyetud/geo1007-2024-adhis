@@ -30,7 +30,8 @@ let baseLayers = {
 };
 let toc = L.control.layers(baseLayers).addTo(map);
 
-// Register a geocoder to the map app 
+
+// Register a geocoder to the map app
 register_geocoder = function (mapInstance) {
   let polygon = null;
 
@@ -62,11 +63,39 @@ register_geocoder = function (mapInstance) {
 
 register_geocoder(map)
 
+function registerGeoLocate(mapInstance) {
+  mapInstance.locate({ setView: true, maxZoom: 16 });
+
+  function onLocationFound(e) {
+    var radius = e.accuracy;
+
+    let m = L.marker(e.latlng).addTo(map)
+      .bindPopup("You are within " + radius.toFixed(1) + " meters from this point").openPopup();
+
+    let c = L.circle(e.latlng, radius).addTo(map);
+
+    setTimeout(function () {
+      mapInstance.removeLayer(m);
+      mapInstance.removeLayer(c);
+    },
+      25000);
+  }
+
+  mapInstance.on('locationfound', onLocationFound);
+
+  function onLocationError(e) {
+    alert(e.message);
+  }
+
+  mapInstance.on('locationerror', onLocationError);
+}
+registerGeoLocate(map)
+
 function registerWFSReadAndWriteLayer(mapInstance, toc) {
      // Settings - These need to agree with the definition of the WFS layer in Geoserver
      var namespace_prefix = "geo1007";
      var namespace_uri = "http://all.kinds.of.data";
-     var server_url = "http://localhost:8080"
+     var server_url = "https://varioscale.bk.tudelft.nl"
      var layer_name = "pois"
      var geom_column_name = "geom"
      // End Settings
@@ -116,9 +145,6 @@ function registerWFSReadAndWriteLayer(mapInstance, toc) {
      return performInsert; // return function reference to be able to insert data
  }
  let insertWFS = registerWFSReadAndWriteLayer(map, toc)
-Refresh the web page. You now should see the content from your Points of Interest layer also being displayed on the map (verify the information is the same as in the database by clicking on a marker).
-
-Put this javascript code in main.js, to register the event listener, when a user clicks on the map.
 
  function registerPopUpForInsert(mapInstance) {
      var popup = L.popup();
